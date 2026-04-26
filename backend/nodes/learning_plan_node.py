@@ -46,7 +46,7 @@ async def learning_plan_node(state: GraphState) -> GraphState:
 
     try:
         llm = get_planner_llm()
-        commitment = getattr(state, "commitment_hours_per_week", 10)
+        commitment = getattr(state, "_commitment", 10) or 10
 
         # Build candidate profile
         strengths = [
@@ -119,9 +119,45 @@ async def learning_plan_node(state: GraphState) -> GraphState:
 
     except Exception as e:
         logger.error("learning_plan_failed", session_id=state.session_id, error=str(e))
+
+        # Graceful fallback: still produce a minimal plan so report can render.
+        commitment = getattr(state, "_commitment", 10) or 10
+        skill_paths: list[SkillLearningPath] = []
+        total_hours = 0.0
+        for gap in state.skill_gaps:
+            est_hours = float(max(gap.gap_size * 8, 6))
+            total_hours += est_hours
+            skill_paths.append(
+                SkillLearningPath(
+                    skill_name=gap.skill_name,
+                    gap=gap,
+                    why_prioritised="Identified as a high-impact skill gap during assessment.",
+                    resources=[],
+                    estimated_hours=est_hours,
+                    estimated_weeks=round(est_hours / max(commitment, 1), 1),
+                    milestones=[
+                        f"Reach level {min(gap.assessed_level + 1, gap.required_level)}/5",
+                        f"Close the {gap.gap_size}-point proficiency gap",
+                    ],
+                )
+            )
+
+        fallback_plan = LearningPlan(
+            total_estimated_hours=round(total_hours, 1),
+            total_estimated_weeks=round(total_hours / max(commitment, 1), 1),
+            commitment_hours_per_week=commitment,
+            executive_summary=(
+                "A fallback learning plan was generated because the AI planner "
+                "was temporarily unavailable. You can still follow this roadmap "
+                "and regenerate later for richer recommendations."
+            ),
+            skill_paths=skill_paths,
+            quick_wins=[g.skill_name for g in state.skill_gaps[:2]],
+            recommended_sequence=[g.skill_name for g in state.skill_gaps],
+        )
         return state.model_copy(update={
-            "phase": SessionPhase.ERROR,
-            "error_message": f"Learning plan generation failed: {str(e)}",
+            "phase": SessionPhase.COMPLETE,
+            "learning_plan": fallback_plan,
         })
 
 

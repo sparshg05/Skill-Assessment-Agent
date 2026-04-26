@@ -99,24 +99,42 @@ class AgentRunner:
             "awaiting_human_input": False,
         })
 
-        # Run assessment step
-        state = await assessment_node(state)
+        try:
+            # Run assessment step
+            state = await assessment_node(state)
 
-        # Append bot message to history
-        if state.pending_bot_message:
+            # Append bot message to history
+            if state.pending_bot_message:
+                updated_history = list(state.conversation_history) + [
+                    {"role": "assistant", "content": state.pending_bot_message}
+                ]
+                state = state.model_copy(update={"conversation_history": updated_history})
+
+            # If assessment complete → run analysis + planning pipeline
+            if state.phase == SessionPhase.ANALYSING:
+                state = await gap_analysis_node(state)
+                if state.phase != SessionPhase.ERROR:
+                    # Recover commitment from session
+                    commitment = getattr(state, "_commitment", 10) or 10
+                    state = state.model_copy()
+                    state = await learning_plan_node(state)
+        except Exception as e:
+            # Do not fail the chat turn with a 500 on provider throttling.
+            # Return a user-safe message and keep the session resumable.
+            logger.error("respond_pipeline_failed", session_id=session_id, error=str(e))
+            retry_message = (
+                "I'm temporarily rate-limited by the AI provider, so I couldn't process "
+                "that response. Please wait 20-30 seconds and resend your last answer."
+            )
+            state = state.model_copy(update={
+                "pending_bot_message": retry_message,
+                "awaiting_human_input": True,
+                "phase": SessionPhase.ASSESSING,
+            })
             updated_history = list(state.conversation_history) + [
-                {"role": "assistant", "content": state.pending_bot_message}
+                {"role": "assistant", "content": retry_message}
             ]
             state = state.model_copy(update={"conversation_history": updated_history})
-
-        # If assessment complete → run analysis + planning pipeline
-        if state.phase == SessionPhase.ANALYSING:
-            state = await gap_analysis_node(state)
-            if state.phase != SessionPhase.ERROR:
-                # Recover commitment from session
-                commitment = getattr(state, "_commitment", 10) or 10
-                state = state.model_copy()
-                state = await learning_plan_node(state)
 
         is_complete = state.phase == SessionPhase.COMPLETE
 

@@ -40,7 +40,9 @@ export default function ChatPage() {
         try {
           const report = await api.getReport(sessionId)
           setReport(report)
-        } catch (_) {}
+        } catch (err) {
+          addMessage('system', `Assessment finished, but report fetch failed: ${err.message}`)
+        }
       }
     } catch (err) {
       addMessage('system', `Something went wrong: ${err.message}`)
