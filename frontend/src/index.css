@@ -1,0 +1,112 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Palette — warm off-white on deep charcoal */
+  --ink:        #0e0e0e;
+  --ink-2:      #1a1a1a;
+  --ink-3:      #242424;
+  --ink-4:      #2e2e2e;
+  --fog:        #3a3a3a;
+  --mist:       #5a5a5a;
+  --silver:     #8a8a8a;
+  --cloud:      #c4c4c4;
+  --snow:       #f0ede8;
+  --white:      #faf8f5;
+
+  /* Accent — a single warm amber-gold */
+  --amber:      #e8a020;
+  --amber-dim:  #c48818;
+  --amber-glow: rgba(232,160,32,0.12);
+  --amber-ring: rgba(232,160,32,0.25);
+
+  /* Semantic */
+  --bg:         var(--ink);
+  --surface:    var(--ink-2);
+  --surface-2:  var(--ink-3);
+  --border:     var(--ink-4);
+  --border-2:   var(--fog);
+  --text:       var(--snow);
+  --text-2:     var(--cloud);
+  --text-3:     var(--silver);
+  --text-4:     var(--mist);
+
+  /* Status */
+  --green:  #5cb87a;
+  --red:    #d96b6b;
+  --blue:   #6b9fd9;
+
+  /* Typography */
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-sans:  'Geist', system-ui, sans-serif;
+  --font-mono:  'Geist Mono', 'Courier New', monospace;
+
+  /* Spacing scale */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s8: 32px;
+  --s10: 40px;
+  --s12: 48px;
+  --s16: 64px;
+
+  /* Radius */
+  --r1: 4px;
+  --r2: 8px;
+  --r3: 12px;
+  --r4: 16px;
+  --r5: 24px;
+  --r-full: 9999px;
+
+  /* Transitions */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+
+/* Selection */
+::selection {
+  background: var(--amber-ring);
+  color: var(--text);
+}
+
+/* Focus */
+*:focus-visible {
+  outline: 1.5px solid var(--amber);
+  outline-offset: 2px;
+  border-radius: var(--r1);
+}
+
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+textarea, input, select { font-family: inherit; }
