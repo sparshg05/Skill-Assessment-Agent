@@ -33,6 +33,8 @@ def get_llm(model_override: str | None = None, temperature: float = 0.3) -> Base
             model=model or settings.assessor_model,
             temperature=temperature,
             api_key=settings.openai_api_key,
+            timeout=30,
+            max_retries=1,
         )
     elif provider == "anthropic":
         from langchain_anthropic import ChatAnthropic
@@ -40,6 +42,17 @@ def get_llm(model_override: str | None = None, temperature: float = 0.3) -> Base
             model=model or "claude-3-5-sonnet-20241022",
             temperature=temperature,
             api_key=settings.anthropic_api_key,
+            timeout=30,
+            max_retries=1,
+        )
+    elif provider == "groq":
+        from langchain_groq import ChatGroq
+        return ChatGroq(
+            model=model or settings.assessor_model,
+            temperature=temperature,
+            api_key=settings.groq_api_key,
+            timeout=30,
+            max_retries=1,
         )
     else:
         raise ValueError(f"Unsupported LLM provider: {provider}")

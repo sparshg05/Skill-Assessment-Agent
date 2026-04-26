@@ -17,6 +17,7 @@ from models import GraphState, SessionPhase
 logger = structlog.get_logger(__name__)
 
 _redis_client: aioredis.Redis | None = None
+_memory_sessions: dict[str, str] = {}
 
 
 async def get_redis() -> aioredis.Redis:
@@ -51,16 +52,31 @@ class SessionStore:
         return f"session:{session_id}"
 
     async def save(self, state: GraphState) -> None:
-        client = await self._client()
-        key = self._key(state.session_id)
         data = state.model_dump_json()
-        await client.setex(key, self.ttl, data)
-        logger.debug("session_saved", session_id=state.session_id, phase=state.phase)
+        key = self._key(state.session_id)
+        try:
+            client = await self._client()
+            await client.setex(key, self.ttl, data)
+            logger.debug("session_saved", session_id=state.session_id, phase=state.phase, backend="redis")
+        except Exception as e:
+            _memory_sessions[key] = data
+            logger.warning(
+                "session_saved_in_memory",
+                session_id=state.session_id,
+                phase=state.phase,
+                error=str(e),
+            )
 
     async def load(self, session_id: str) -> GraphState | None:
-        client = await self._client()
         key = self._key(session_id)
-        raw = await client.get(key)
+        raw: str | None = None
+        try:
+            client = await self._client()
+            raw = await client.get(key)
+        except Exception as e:
+            raw = _memory_sessions.get(key)
+            logger.warning("session_load_from_memory", session_id=session_id, error=str(e))
+
         if raw is None:
             logger.warning("session_not_found", session_id=session_id)
             return None
@@ -69,16 +85,29 @@ class SessionStore:
         return state
 
     async def delete(self, session_id: str) -> None:
-        client = await self._client()
-        await client.delete(self._key(session_id))
+        key = self._key(session_id)
+        try:
+            client = await self._client()
+            await client.delete(key)
+        except Exception:
+            _memory_sessions.pop(key, None)
 
     async def exists(self, session_id: str) -> bool:
-        client = await self._client()
-        return bool(await client.exists(self._key(session_id)))
+        key = self._key(session_id)
+        try:
+            client = await self._client()
+            return bool(await client.exists(key))
+        except Exception:
+            return key in _memory_sessions
 
     async def extend_ttl(self, session_id: str) -> None:
-        client = await self._client()
-        await client.expire(self._key(session_id), self.ttl)
+        key = self._key(session_id)
+        try:
+            client = await self._client()
+            await client.expire(key, self.ttl)
+        except Exception:
+            # In-memory fallback currently has no TTL eviction.
+            return
 
 
 # Singleton

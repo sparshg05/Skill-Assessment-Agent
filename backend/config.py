@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     # LLM
     openai_api_key: str = Field(default="", env="OPENAI_API_KEY")
     anthropic_api_key: str = Field(default="", env="ANTHROPIC_API_KEY")
+    groq_api_key: str = Field(default="", env="GROQ_API_KEY")
     assessor_model: str = Field(default="gpt-4o", env="ASSESSOR_MODEL")
     parser_model: str = Field(default="gpt-4o-mini", env="PARSER_MODEL")
     planner_model: str = Field(default="gpt-4o", env="PLANNER_MODEL")

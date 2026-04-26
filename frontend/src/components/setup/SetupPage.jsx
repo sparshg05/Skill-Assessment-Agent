@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Zap, BarChart2, Map } from 'lucide-react'
-import { Button, Spinner } from '../ui/index.jsx'
+import { Spinner } from '../ui/index.jsx'
 import { api } from '../../services/api.js'
 import { useStore } from '../../store/index.js'
 
@@ -84,6 +84,11 @@ export default function SetupPage() {
 
       {/* ── Top bar ── */}
       <header style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+        background: 'rgba(20, 23, 28, 0.88)',
+        backdropFilter: 'blur(8px)',
         padding: '20px 32px', display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', borderBottom: '1px solid var(--border)',
       }}>
@@ -199,14 +204,50 @@ export default function SetupPage() {
             </select>
           </div>
 
-          <Button
-            variant="primary" size="lg"
-            loading={loading} disabled={loading}
+          <motion.button
+            type="button"
+            disabled={loading}
             onClick={handleStart}
-            style={{ marginLeft: 'auto' }}
+            whileHover={!loading ? { scale: 1.02, y: -1 } : {}}
+            whileTap={!loading ? { scale: 0.98 } : {}}
+            style={{
+              marginLeft: 'auto',
+              minWidth: '220px',
+              height: '54px',
+              border: '1px solid rgba(232,160,32,0.45)',
+              borderRadius: '12px',
+              background: loading
+                ? 'rgba(232,160,32,0.45)'
+                : 'linear-gradient(135deg, #f1b638 0%, #d89717 100%)',
+              color: 'var(--ink)',
+              boxShadow: loading
+                ? 'none'
+                : '0 10px 24px rgba(232,160,32,0.24), inset 0 1px 0 rgba(255,255,255,0.35)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              fontFamily: 'var(--font-sans)',
+              fontSize: '15px',
+              fontWeight: 700,
+              letterSpacing: '0.01em',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.8 : 1,
+              transition: 'all 0.2s ease',
+            }}
           >
-            {!loading && <>Start Assessment <ArrowRight size={16} /></>}
-          </Button>
+            {loading ? (
+              <>
+                <Spinner size={16} color="var(--ink)" />
+                Starting...
+              </>
+            ) : (
+              <>
+                Start Assessment
+                <ArrowRight size={17} />
+              </>
+            )}
+          </motion.button>
         </div>
 
         <AnimatePresence>
